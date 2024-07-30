@@ -2,12 +2,40 @@ package logger
 
 import (
 	"github.com/op/go-logging"
+	"io"
+	"os"
 )
 
 var logger *logging.Logger = nil
 
+var format = logging.MustStringFormatter(
+	`%{color}%{time:15:04:05.000} %{level:.4s} %{shortfile} %{message} %{color:reset}`,
+)
+
 func SetLogger(l *logging.Logger) {
 	logger = l
+}
+
+func createBackend(w io.Writer, level logging.Level) logging.Backend {
+	backend := logging.NewLogBackend(w, "", 0)
+	backendLeveled := logging.AddModuleLevel(logging.NewBackendFormatter(backend, format))
+	backendLeveled.SetLevel(level, "")
+	return backendLeveled
+}
+
+func New(logLevel string, module string) error {
+	level, err := logging.LogLevel(logLevel)
+	if err != nil {
+		level = logging.WARNING
+	}
+	if logger == nil {
+		logger = logging.MustGetLogger(module)
+	}
+	logger.ExtraCalldepth = 1
+	consoleBackend := createBackend(os.Stdout, level)
+	logging.SetBackend(consoleBackend)
+	return nil
+
 }
 
 func Debug(i ...interface{}) {
