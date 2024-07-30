@@ -1,4 +1,4 @@
-package client
+package comfy
 
 type PromptMessage struct {
 	Type    string

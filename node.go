@@ -1,4 +1,4 @@
-package graph
+package comfy
 
 import (
 	"github.com/er1cw00/comfy.go/base/logger"

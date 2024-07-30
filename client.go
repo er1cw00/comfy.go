@@ -1,4 +1,4 @@
-package client
+package comfy
 
 import (
 	"encoding/json"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/er1cw00/comfy.go/base"
 	"github.com/er1cw00/comfy.go/base/logger"
-	"github.com/er1cw00/comfy.go/graph"
 	"github.com/google/uuid"
 )
 
@@ -36,7 +35,7 @@ type ComfyClient struct {
 	baseAddr              string
 	clientId              string
 	websocket             *WebSocketClient
-	nodeObjects           *graph.NodeObjects
+	nodeObjects           *NodeObjects
 	queueditems           map[string]*QueueItem
 	queuecount            int
 	callbacks             *ComfyClientCallbacks
@@ -136,31 +135,31 @@ func (c *ComfyClient) ClientID() string {
 }
 
 // NewGraphFromJsonReader creates a new graph from the data read from an io.Reader
-func (cc *ComfyClient) NewGraphFromJsonReader(r io.Reader) (*graph.Graph, *[]string, error) {
+func (cc *ComfyClient) NewGraphFromJsonReader(r io.Reader) (*Graph, *[]string, error) {
 	if cc.nodeObjects == nil {
 		return nil, nil, ErrNotNodeObjects
 	}
-	return graph.NewGraphFromJsonReader(r, cc.nodeObjects)
+	return NewGraphFromJsonReader(r, cc.nodeObjects)
 }
 
 // NewGraphFromJsonFile creates a new graph from a JSON file
-func (cc *ComfyClient) NewGraphFromJsonFile(path string) (*graph.Graph, *[]string, error) {
+func (cc *ComfyClient) NewGraphFromJsonFile(path string) (*Graph, *[]string, error) {
 	if cc.nodeObjects == nil {
 		return nil, nil, ErrNotNodeObjects
 	}
-	return graph.NewGraphFromJsonFile(path, cc.nodeObjects)
+	return NewGraphFromJsonFile(path, cc.nodeObjects)
 }
 
 // NewGraphFromJsonString creates a new graph from a JSON string
-func (cc *ComfyClient) NewGraphFromJsonString(path string) (*graph.Graph, *[]string, error) {
+func (cc *ComfyClient) NewGraphFromJsonString(path string) (*Graph, *[]string, error) {
 	if cc.nodeObjects == nil {
 		return nil, nil, ErrNotNodeObjects
 	}
-	return graph.NewGraphFromJsonString(path, cc.nodeObjects)
+	return NewGraphFromJsonString(path, cc.nodeObjects)
 }
 
 // NewGraphFromPNGReader extracts the workflow from PNG data read from an io.Reader and creates a new graph
-func (c *ComfyClient) NewGraphFromPNGReader(r io.Reader) (*graph.Graph, *[]string, error) {
+func (c *ComfyClient) NewGraphFromPNGReader(r io.Reader) (*Graph, *[]string, error) {
 	metadata, err := base.GetPngMetadata(r)
 	if err != nil {
 		return nil, nil, err
@@ -179,7 +178,7 @@ func (c *ComfyClient) NewGraphFromPNGReader(r io.Reader) (*graph.Graph, *[]strin
 }
 
 // NewGraphFromPNGReader extracts the workflow from PNG data read from a file and creates a new graph
-func (c *ComfyClient) NewGraphFromPNGFile(path string) (*graph.Graph, *[]string, error) {
+func (c *ComfyClient) NewGraphFromPNGFile(path string) (*Graph, *[]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, nil, err

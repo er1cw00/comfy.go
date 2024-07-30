@@ -1,4 +1,4 @@
-package graph
+package comfy
 
 type SimpleAPI struct {
 	Properties  map[string]Property

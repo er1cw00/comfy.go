@@ -1,4 +1,4 @@
-package client
+package comfy
 
 import (
 	"encoding/json"
@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/er1cw00/comfy.go/base/logger"
-	"github.com/er1cw00/comfy.go/graph"
 )
 
 /*
@@ -96,8 +95,8 @@ func (c *ComfyClient) GetPromptHistoryByID() (map[string]PromptHistoryItem, erro
 		// [
 		// 	[0] index 		int,
 		// 	[1] promptID 	string,
-		// 	[2] prompt 		map[string]graph.PromptNode, // we'll ignore this
-		// 	[3] extra_data 	graph.PromptExtraData,       // the graph is in here
+		// 	[2] prompt 		map[string]PromptNode, // we'll ignore this
+		// 	[3] extra_data 	PromptExtraData,       // the graph is in here
 		//  [4] outputs     []string 						// array of nodeIDs that have outputs
 		// ]
 		Prompt  []interface{}              `json:"prompt"`
@@ -125,7 +124,7 @@ func (c *ComfyClient) GetPromptHistoryByID() (map[string]PromptHistoryItem, erro
 		// serialize it back and re-deserialize as a graph
 		// this could be more efficient with raw json, but ugh!
 		gdata, _ := json.Marshal(workflow)
-		graph := &graph.Graph{}
+		graph := &Graph{}
 		err = json.Unmarshal(gdata, &graph)
 		if err != nil {
 			return nil, err
@@ -240,7 +239,7 @@ func (c *ComfyClient) GetExtensions() ([]string, error) {
 	return retv, nil
 }
 
-func (c *ComfyClient) GetObjectInfos() (*graph.NodeObjects, error) {
+func (c *ComfyClient) GetObjectInfos() (*NodeObjects, error) {
 	resp, err := http.Get(fmt.Sprintf("http://%s/object_info", c.baseAddr))
 
 	if err != nil {
@@ -248,7 +247,7 @@ func (c *ComfyClient) GetObjectInfos() (*graph.NodeObjects, error) {
 	}
 
 	body, _ := io.ReadAll(resp.Body)
-	result := &graph.NodeObjects{}
+	result := &NodeObjects{}
 	err = json.Unmarshal(body, &result.Objects)
 	if err != nil {
 		return nil, err
@@ -258,7 +257,7 @@ func (c *ComfyClient) GetObjectInfos() (*graph.NodeObjects, error) {
 	return result, nil
 }
 
-func (c *ComfyClient) QueuePrompt(graph *graph.Graph) (*QueueItem, error) {
+func (c *ComfyClient) QueuePrompt(graph *Graph) (*QueueItem, error) {
 	if !c.websocket.isConnected {
 		return nil, ErrComfyDisconnected
 	}

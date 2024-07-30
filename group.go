@@ -1,4 +1,4 @@
-package graph
+package comfy
 
 type Group struct {
 	Title    string `json:"title"`

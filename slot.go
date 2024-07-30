@@ -1,4 +1,4 @@
-package graph
+package comfy
 
 // Slot represents a connection point within a GraphNode.
 // It holds various properties that define the behavior and appearance

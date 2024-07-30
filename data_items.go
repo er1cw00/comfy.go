@@ -1,8 +1,4 @@
-package client
-
-import (
-	"github.com/er1cw00/comfy.go/graph"
-)
+package comfy
 
 // There may be other DataOutput types.  We definitely need a text type
 
@@ -43,7 +39,7 @@ type QueueExecInfo struct {
 type PromptHistoryItem struct {
 	PromptID string
 	Index    int
-	Graph    *graph.Graph
+	Graph    *Graph
 	Outputs  map[int][]DataOutput
 }
 

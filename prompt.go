@@ -1,4 +1,4 @@
-package graph
+package comfy
 
 // Prompt is the data that is enqueued to an instance of ComfyUI
 type Prompt struct {

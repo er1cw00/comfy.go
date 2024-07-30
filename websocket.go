@@ -1,4 +1,4 @@
-package client
+package comfy
 
 import (
 	"math"
@@ -58,6 +58,9 @@ func (c *WebSocketClient) Start() {
 				logger.Info("comfy websocket connected >>")
 			}
 			c.isConnected = true
+			if c.callback != nil && c.callback.OnWebsocketConnected != nil {
+				c.callback.OnWebsocketConnected()
+			}
 			c.handleMessages()
 		}
 		logger.Debug("websocket client loop exit <<")

@@ -1,4 +1,4 @@
-package graph
+package comfy
 
 import (
 	"encoding/json"
@@ -198,7 +198,7 @@ func (t *Graph) CreateNodeProperties(node_objects *NodeObjects) *[]string {
 				// skip Reroute
 				continue
 			} else {
-				logger.Errorf("Could not get node object for node type: %v", n.Type)
+				logger.Errorf("Could not get node object for node type(%s), id(%d), title(%s)", n.Type, n.ID, n.Title)
 				if retv == nil {
 					r := make([]string, 0)
 					retv = &r

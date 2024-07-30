@@ -1,4 +1,4 @@
-package graph
+package comfy
 
 // Widget represents the input points for setting properties within a Node
 type Widget struct {
