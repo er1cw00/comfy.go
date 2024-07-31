@@ -97,7 +97,7 @@ func (c *WebSocketClient) handleMessages() {
 
 func (c *WebSocketClient) getReconnectDelay() time.Duration {
 	// Calculate the delay as BaseDelay * 2^(RetryCount), capped at MaxDelay
-	delay := time.Duration(5 + math.Pow(2, float64(c.retryCount)))
+	delay := time.Second * time.Duration(5+math.Pow(2, float64(c.retryCount)))
 	if delay > c.maxDelay {
 		delay = c.maxDelay
 	} else {
@@ -106,7 +106,6 @@ func (c *WebSocketClient) getReconnectDelay() time.Duration {
 	if c.retryCount >= 60 {
 		c.retryCount = 60
 	}
-	logger.Debugf("RetryCount: %d, delaty: %v", c.retryCount, delay)
 	return delay
 }
 
