@@ -48,7 +48,7 @@ func (c *WebSocketClient) Start() {
 				if c.isConnected || forceLog {
 					logger.Errorf("websocket connecting failed,err: %v", err)
 				}
-				//forceLog = false
+				forceLog = false
 				c.isConnected = false
 				delay := c.getReconnectDelay()
 				time.Sleep(delay)
@@ -58,9 +58,7 @@ func (c *WebSocketClient) Start() {
 				logger.Info("comfy websocket connected >>")
 			}
 			c.isConnected = true
-			if c.callback != nil && c.callback.OnWebsocketConnected != nil {
-				c.callback.OnWebsocketConnected()
-			}
+			c.callback.OnWebsocketConnected()
 			c.handleMessages()
 		}
 		logger.Debug("websocket client loop exit <<")
