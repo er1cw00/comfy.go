@@ -37,11 +37,7 @@ func New(logLevel string, module string) error {
 	return nil
 
 }
-func check() {
-	if logger == nil {
-		New("Debug", "default")
-	}
-}
+
 func Debug(i ...interface{}) {
 	if logger == nil {
 		return
