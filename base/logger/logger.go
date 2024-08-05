@@ -43,75 +43,97 @@ func check() {
 	}
 }
 func Debug(i ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Debug(i...)
 }
 
 func Debugf(format string, args ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Debugf(format, args...)
 }
 
 func Info(i ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Info(i...)
 }
 
 func Infof(format string, args ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Infof(format, args...)
 }
 
 func Warn(i ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Warning(i...)
 }
 
 func Warnf(format string, args ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Warningf(format, args...)
 }
 
 func Error(i ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Error(i...)
 }
 
 func Errorf(format string, args ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Errorf(format, args...)
 }
 
 func Fatal(i ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Fatal(i...)
 }
 
 func Fatalf(format string, args ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Fatalf(format, args...)
 }
 
 func Panic(i ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Panic(i...)
 }
 
 func Panicf(format string, args ...interface{}) {
-	check()
+	if logger == nil {
+		return
+	}
 	logger.Panicf(format, args...)
 }
 
 func Assert(exp bool, i ...interface{}) {
-	if !exp {
-		check()
+	if !exp && logger != nil {
 		logger.Panic(i...)
 	}
 }
 
 func Assertf(exp bool, format string, args ...interface{}) {
-	if !exp {
-		check()
+	if !exp && logger != nil {
 		logger.Panicf(format, args...)
 	}
 }

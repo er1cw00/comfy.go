@@ -83,7 +83,7 @@ func (c *WebSocketClient) handleMessages() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			logger.Warn("Read error: %v", err)
+			logger.Warnf("Read error: %v", err)
 			break
 		}
 		if c.callback != nil {
