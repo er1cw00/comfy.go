@@ -22,12 +22,12 @@ const (
 )
 
 type ComfyClientCallbacks struct {
-	WebsocketConnected      func(*ComfyClient)
-	WebsocketDisconnected   func(*ComfyClient)
-	ClientQueueCountChanged func(*ComfyClient, int)
-	QueuedItemStarted       func(*ComfyClient, *QueueItem)
-	QueuedItemStopped       func(*ComfyClient, *QueueItem, QueuedItemStoppedReason)
-	QueuedItemDataAvailable func(*ComfyClient, *QueueItem, *PromptMessageData)
+	WebsocketConnected    func(*ComfyClient)
+	WebsocketDisconnected func(*ComfyClient)
+	// ClientQueueCountChanged func(*ComfyClient, int)
+	// QueuedItemStarted       func(*ComfyClient, *QueueItem)
+	// QueuedItemStopped       func(*ComfyClient, *QueueItem, QueuedItemStoppedReason)
+	// QueuedItemDataAvailable func(*ComfyClient, *QueueItem, *PromptMessageData)
 }
 
 // ComfyClient is the top level object that allows for interaction with the ComfyUI backend
@@ -36,19 +36,19 @@ type ComfyClient struct {
 	clientId              string
 	websocket             *WebSocketClient
 	nodeObjects           *NodeObjects
-	queueditems           map[string]*QueueItem
 	queuecount            int
 	callbacks             *ComfyClientCallbacks
 	lastProcessedPromptID string
+	messages              chan PromptMessage
+	//queueditems           map[string]*QueueItem
 }
 
 // NewComfyClientWithTimeout creates a new instance of a Comfy2go client with a connection timeout
 func NewComfyClientWithTimeout(baseAddr string, callbacks *ComfyClientCallbacks, timeout int64) *ComfyClient {
 	cid := uuid.New().String()
 	retv := &ComfyClient{
-		baseAddr:    baseAddr,
-		clientId:    cid,
-		queueditems: make(map[string]*QueueItem),
+		baseAddr: baseAddr,
+		clientId: cid,
 		websocket: &WebSocketClient{
 			url:         "ws://" + baseAddr + "/ws?clientId=" + cid,
 			isConnected: false,
@@ -57,6 +57,8 @@ func NewComfyClientWithTimeout(baseAddr string, callbacks *ComfyClientCallbacks,
 		},
 		queuecount: 0,
 		callbacks:  callbacks,
+		messages:   nil,
+		//queueditems: make(map[string]*QueueItem),
 	}
 	// golang uses mark-sweep GC, so this circular reference should be fine
 	retv.websocket.callback = retv
@@ -67,9 +69,8 @@ func NewComfyClientWithTimeout(baseAddr string, callbacks *ComfyClientCallbacks,
 func NewComfyClient(baseAddr string, callbacks *ComfyClientCallbacks) *ComfyClient {
 	cid := uuid.New().String()
 	retv := &ComfyClient{
-		baseAddr:    baseAddr,
-		clientId:    cid,
-		queueditems: make(map[string]*QueueItem),
+		baseAddr: baseAddr,
+		clientId: cid,
 		websocket: &WebSocketClient{
 			url:         "ws://" + baseAddr + "/ws?clientId=" + cid,
 			isConnected: false,
@@ -78,12 +79,17 @@ func NewComfyClient(baseAddr string, callbacks *ComfyClientCallbacks) *ComfyClie
 		},
 		queuecount: 0,
 		callbacks:  callbacks,
+		messages:   nil,
+		//queueditems: make(map[string]*QueueItem),
 	}
 	// golang uses mark-sweep GC, so this circular reference should be fine
 	retv.websocket.callback = retv
 	return retv
 }
 
+func (cc *ComfyClient) GetMessages() chan PromptMessage {
+	return cc.messages
+}
 func (cc *ComfyClient) OnMessage(message string) {
 	cc.OnWindowSocketMessage(message)
 }
@@ -189,13 +195,13 @@ func (c *ComfyClient) NewGraphFromPNGFile(path string) (*Graph, *[]string, error
 
 // GetQueuedItem returns a QueueItem that was queued with the ComfyClient, that has not been processed yet
 // or is currently being processed.  Once a QueueItem has been processed, it will not be available with this method.
-func (c *ComfyClient) GetQueuedItem(promptId string) *QueueItem {
-	val, ok := c.queueditems[promptId]
-	if ok {
-		return val
-	}
-	return nil
-}
+// func (c *ComfyClient) GetQueuedItem(promptId string) *QueueItem {
+// 	val, ok := c.queueditems[promptId]
+// 	if ok {
+// 		return val
+// 	}
+// 	return nil
+// }
 
 // OnWindowSocketMessage processes each message received from the websocket connection to ComfyUI.
 // The messages are parsed, and translated into PromptMessage structs and placed into the correct QueuedItem's message channel.
@@ -208,150 +214,123 @@ func (c *ComfyClient) OnWindowSocketMessage(msg string) {
 
 	switch message.Type {
 	case "status":
-		s := message.Data.(*MessageDataStatus)
-		if c.callbacks != nil && c.callbacks.ClientQueueCountChanged != nil {
-			c.queuecount = s.Status.ExecInfo.QueueRemaining
-			c.callbacks.ClientQueueCountChanged(c, s.Status.ExecInfo.QueueRemaining)
-		}
 	case "execution_start":
 		s := message.Data.(*MessageDataExecutionStart)
-		qi := c.GetQueuedItem(s.PromptID)
+
 		// update lastProcessedPromptID to indicate we are processing a new prompt
 		c.lastProcessedPromptID = s.PromptID
-		if qi != nil {
-			if c.callbacks != nil && c.callbacks.QueuedItemStarted != nil {
-				c.callbacks.QueuedItemStarted(c, qi)
-			}
-			m := PromptMessage{
-				Type: "started",
-				Message: &PromptMessageStarted{
-					PromptID: qi.PromptID,
-				},
-			}
-			qi.Messages <- m
+		m := PromptMessage{
+			Type: "started",
+			Message: &PromptMessageStarted{
+				PromptID: s.PromptID,
+			},
+		}
+		if c.messages != nil {
+			c.messages <- m
 		}
 	case "execution_cached":
 		// this is probably not usefull for us
 	case "executing":
 		s := message.Data.(*MessageDataExecuting)
-		qi := c.GetQueuedItem(s.PromptID)
 
-		if qi != nil {
-			if s.Node == nil {
-				// final node was processed
-				m := PromptMessage{
-					Type: "stopped",
-					Message: &PromptMessageStopped{
-						QueueItem: qi,
-						Exception: nil,
-					},
-				}
-				// remove the Item from our Queue before sending the message
-				// no other messages will be sent to the channel after this
-				if c.callbacks != nil && c.callbacks.QueuedItemStopped != nil {
-					c.callbacks.QueuedItemStopped(c, qi, QueuedItemStoppedReasonFinished)
-				}
-				delete(c.queueditems, qi.PromptID)
-				qi.Messages <- m
-			} else {
-				node := qi.Workflow.GetNodeById(*s.Node)
-				m := PromptMessage{
-					Type: "executing",
-					Message: &PromptMessageExecuting{
-						NodeID: *s.Node,
-						Title:  node.DisplayName,
-					},
-				}
-				qi.Messages <- m
+		if s.Node == nil {
+			// final node was processed
+			logger.Debugf("node: %v", s.Node)
+			stop := false
+			if s.BatchClose != nil {
+				stop = *s.BatchClose
+			}
+			m := PromptMessage{
+				Type: "stopped",
+				Message: &PromptMessageStopped{
+					PromptID:  s.PromptID, //qi,
+					Exception: nil,
+					Stop:      stop,
+				},
+			}
+			// remove the Item from our Queue before sending the message
+			// no other messages will be sent to the channel after this
+			if c.messages != nil {
+				c.messages <- m
+			}
+		} else {
+			//node := qi.Workflow.GetNodeById(*s.Node)
+			m := PromptMessage{
+				Type: "executing",
+				Message: &PromptMessageExecuting{
+					NodeID: *s.Node,
+					Title:  "unknown", //node.DisplayName,
+				},
+			}
+			if c.messages != nil {
+				c.messages <- m
 			}
 		}
 	case "progress":
 		s := message.Data.(*MessageDataProgress)
-		qi := c.GetQueuedItem(c.lastProcessedPromptID)
-		if qi != nil {
-			m := PromptMessage{
-				Type: "progress",
-				Message: &PromptMessageProgress{
-					Value: s.Value,
-					Max:   s.Max,
-				},
-			}
-			qi.Messages <- m
+		m := PromptMessage{
+			Type: "progress",
+			Message: &PromptMessageProgress{
+				Value: s.Value,
+				Max:   s.Max,
+			},
+		}
+		if c.messages != nil {
+			c.messages <- m
 		}
 	case "executed":
 		s := message.Data.(*MessageDataExecuted)
-		qi := c.GetQueuedItem(s.PromptID)
-		if qi != nil {
-			// mdata := &PromptMessageData{
-			// 	NodeID: s.Node,
-			// 	Images: *s.Output["images"],
-			// }
+		// collect the data from the output
+		mdata := &PromptMessageData{
+			NodeID: s.Node,
+			Data:   make(map[string][]DataOutput),
+		}
 
-			// collect the data from the output
-			mdata := &PromptMessageData{
-				NodeID: s.Node,
-				Data:   make(map[string][]DataOutput),
-			}
-
-			for k, v := range s.Output {
-				mdata.Data[k] = *v
-			}
-
-			m := PromptMessage{
-				Type:    "data",
-				Message: mdata,
-			}
-			if c.callbacks != nil && c.callbacks.QueuedItemDataAvailable != nil {
-				c.callbacks.QueuedItemDataAvailable(c, qi, mdata)
-			}
-			qi.Messages <- m
+		for k, v := range s.Output {
+			mdata.Data[k] = *v
+		}
+		m := PromptMessage{
+			Type:    "data",
+			Message: mdata,
+		}
+		if c.messages != nil {
+			c.messages <- m
 		}
 	case "execution_interrupted":
 		s := message.Data.(*MessageExecutionInterrupted)
-		qi := c.GetQueuedItem(s.PromptID)
-		if qi != nil {
-			m := PromptMessage{
-				Type: "stopped",
-				Message: &PromptMessageStopped{
-					QueueItem: qi,
-					Exception: nil,
-				},
-			}
-			// remove the Item from our Queue before sending the message
-			// no other messages will be sent to the channel after this
-			if c.callbacks != nil && c.callbacks.QueuedItemStopped != nil {
-				c.callbacks.QueuedItemStopped(c, qi, QueuedItemStoppedReasonInterrupted)
-			}
-			delete(c.queueditems, qi.PromptID)
-			qi.Messages <- m
+		m := PromptMessage{
+			Type: "stopped",
+			Message: &PromptMessageStopped{
+				PromptID:  s.PromptID, //qi,
+				Exception: nil,
+				Stop:      true,
+			},
+		}
+		// remove the Item from our Queue before sending the message
+		// no other messages will be sent to the channel after this
+		if c.messages != nil {
+			c.messages <- m
 		}
 	case "execution_error":
 		s := message.Data.(*MessageExecutionError)
-		qi := c.GetQueuedItem(s.PromptID)
-		if qi != nil {
-			nindex, _ := strconv.Atoi(s.Node) // the node id is serialized as a string
-			tnode := qi.Workflow.GetNodeById(nindex)
-			m := PromptMessage{
-				Type: "stopped",
-				Message: &PromptMessageStopped{
-					QueueItem: qi,
-					Exception: &PromptMessageStoppedException{
-						NodeID:           nindex,
-						NodeType:         s.NodeType,
-						NodeName:         tnode.Title,
-						ExceptionMessage: s.ExceptionMessage,
-						ExceptionType:    s.ExceptionType,
-						Traceback:        s.Traceback,
-					},
+		nindex, _ := strconv.Atoi(s.Node) // the node id is serialized as a string
+		m := PromptMessage{
+			Type: "stopped",
+			Message: &PromptMessageStopped{
+				PromptID: s.PromptID,
+				Exception: &PromptMessageStoppedException{
+					NodeID:           nindex,
+					NodeType:         s.NodeType,
+					NodeName:         "unknonw",
+					ExceptionMessage: s.ExceptionMessage,
+					ExceptionType:    s.ExceptionType,
+					Traceback:        s.Traceback,
 				},
-			}
-			// remove the Item from our Queue before sending the message
-			// no other messages will be sent to the channel after this
-			if c.callbacks != nil && c.callbacks.QueuedItemStopped != nil {
-				c.callbacks.QueuedItemStopped(c, qi, QueuedItemStoppedReasonError)
-			}
-			delete(c.queueditems, qi.PromptID)
-			qi.Messages <- m
+				Stop: true,
+			},
+		}
+		if c.messages != nil {
+			c.messages <- m
 		}
 	default:
 		// Handle unknown data types or return a dedicated error here

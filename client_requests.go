@@ -284,7 +284,6 @@ func (c *ComfyClient) QueuePrompt(graph *Graph) (*QueueItem, error) {
 	// create the queue item
 	item := &QueueItem{
 		Workflow: graph,
-		Messages: make(chan PromptMessage),
 	}
 
 	err = json.Unmarshal(body, &item)
@@ -307,7 +306,8 @@ func (c *ComfyClient) QueuePrompt(graph *Graph) (*QueueItem, error) {
 			return nil, errors.New(perror.Error.Message)
 		}
 	}
-	c.queueditems[item.PromptID] = item
+	c.messages = make(chan PromptMessage)
+	//c.queueditems[item.PromptID] = item
 	return item, nil
 }
 

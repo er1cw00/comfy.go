@@ -56,8 +56,9 @@ func (p *PromptMessage) ToPromptMessageData() *PromptMessageData {
 }
 
 type PromptMessageStopped struct {
-	QueueItem *QueueItem
+	PromptID  string `json:"prompt_id"`
 	Exception *PromptMessageStoppedException
+	Stop      bool
 }
 
 type PromptMessageStoppedException struct {
