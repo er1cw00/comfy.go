@@ -90,21 +90,23 @@ type MessageDataExecutionCached struct {
 */
 
 type MessageDataExecuting struct {
-	Node     *int   `json:"node"`
-	PromptID string `json:"prompt_id"`
+	Node       *int   `json:"node"`
+	PromptID   string `json:"prompt_id"`
+	BatchClose *bool  `json:"batch_closed,omitempty"`
 }
 
 func (mde *MessageDataExecuting) UnmarshalJSON(b []byte) error {
 	var temp struct {
-		Node     *string `json:"node"`
-		PromptID string  `json:"prompt_id"`
+		Node       *string `json:"node"`
+		PromptID   string  `json:"prompt_id"`
+		BatchClose *bool   `json:"batch_closed,omitempty"`
 	}
 	if err := json.Unmarshal(b, &temp); err != nil {
 		return err
 	}
 
 	mde.PromptID = temp.PromptID
-
+	mde.BatchClose = temp.BatchClose
 	// Convert string to int
 	if temp.Node != nil {
 		i, err := strconv.Atoi(*temp.Node)
