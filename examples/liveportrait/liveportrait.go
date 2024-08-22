@@ -47,6 +47,7 @@ func main() {
 	}
 	logger.New("Debug", "txt2img")
 	callbacks := &comfy.ComfyClientCallbacks{
+
 		WebsocketConnected: func(cc *comfy.ComfyClient) {
 			log.Printf("websocket connected\n")
 			if err := cc.QueryNodeObjects(); err != nil {
@@ -60,6 +61,7 @@ func main() {
 	}
 	cc = comfy.NewComfyClient(serverAddr, callbacks)
 	cc.Start()
+
 	for {
 		if cc.IsInitialized() {
 			break
@@ -70,17 +72,31 @@ func main() {
 		logger.Errorf("create graph fail, err: %v\n", err)
 		return
 	}
-	loader := g.GetNodeById(4)
-	positive := g.GetNodeById(20)
-	negative := g.GetNodeById(21)
-	// combine := g.GetNodeById(33)
-	// for k, v := range combine.Properties {
-	// 	logger.Debugf("%s, %v", k, v)
-	// }
-	// logger.Debugf("ckpt_name: %v", loader.GetPropertyWithName("ckpt_name").GetValue())
-	loader.GetPropertyWithName("ckpt_name").SetValue("v1-5-pruned-emaonly.safetensors")
-	positive.GetPropertyWithName("text").SetValue("1girl, dancing, outdoor, large breasts")
-	negative.GetPropertyWithName("text").SetValue("text, watermark")
+
+	imageLoader := g.GetNodeById(1)
+	videoLoader := g.GetNodeById(2)
+	saver := g.GetNodeById(3)
+	batcher := g.GetNodeById(4)
+
+	pathProp := videoLoader.GetPropertyWithName("path")
+	pathProp.SetValue("/Users/wadahana/Desktop/liveportrait.mp4")
+	fpsProp := videoLoader.GetPropertyWithName("force_rate")
+	fpsProp.SetValue(10)
+
+	pathProp = imageLoader.GetPropertyWithName("path")
+	pathProp.SetValue("/Users/wadahana/Desktop/senjougahara2.png")
+
+	batchSizeProp := batcher.GetPropertyWithName("frames_per_batch")
+	batchSizeProp.SetValue(20)
+
+	outPathProp := saver.GetPropertyWithName("path")
+	outPathProp.SetValue("/Users/wadahana/Desktop/output.mp4")
+
+	// fpsProp = saver.GetPropertyWithName("force_rate")
+	// fpsProp.SetValue(10)
+
+	qpProp := saver.GetPropertyWithName("quality")
+	qpProp.SetValue(85)
 
 	_, err = cc.QueuePrompt(g)
 	if err != nil {
@@ -96,7 +112,6 @@ func main() {
 			qm := msg.ToPromptMessageStarted()
 			log.Printf("Start executing prompt ID %s\n", qm.PromptID)
 		case "executing":
-
 			qm := msg.ToPromptMessageExecuting()
 			// store the node's title so we can use it in the progress bar
 			//currentNodeTitle = qm.Title
@@ -112,7 +127,8 @@ func main() {
 				log.Println(qm.Exception)
 				os.Exit(1)
 			}
-			continueLoop = false
+			continueLoop = !qm.Stop
+			fmt.Printf("continueLoop:  %v \n", qm.Stop)
 		case "data":
 			qm := msg.ToPromptMessageData()
 			// data objects have the fields: Filename, Subfolder, Type
@@ -139,5 +155,9 @@ func main() {
 			}
 		}
 	}
-	logger.Debugf("ByeBye")
+	// logger.Debug("clear message  >> ")
+	// for range cc.GetMessages() {
+	// 	logger.Debug("clear message ")
+	// }
+	logger.Debug("ByeBye...")
 }
