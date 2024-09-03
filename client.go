@@ -239,6 +239,8 @@ func (c *ComfyClient) OnWindowSocketMessage(msg string) {
 			stop := false
 			if s.BatchClose != nil {
 				stop = *s.BatchClose
+			} else {
+				stop = true
 			}
 			m := PromptMessage{
 				Type: "stopped",
