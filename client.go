@@ -60,6 +60,7 @@ func NewComfyClientWithTimeout(baseAddr string, callbacks *ComfyClientCallbacks,
 		messages:   nil,
 		//queueditems: make(map[string]*QueueItem),
 	}
+	retv.messages = make(chan PromptMessage)
 	// golang uses mark-sweep GC, so this circular reference should be fine
 	retv.websocket.callback = retv
 	return retv
@@ -82,6 +83,7 @@ func NewComfyClient(baseAddr string, callbacks *ComfyClientCallbacks) *ComfyClie
 		messages:   nil,
 		//queueditems: make(map[string]*QueueItem),
 	}
+	retv.messages = make(chan PromptMessage)
 	// golang uses mark-sweep GC, so this circular reference should be fine
 	retv.websocket.callback = retv
 	return retv
@@ -235,7 +237,6 @@ func (c *ComfyClient) OnWindowSocketMessage(msg string) {
 
 		if s.Node == nil {
 			// final node was processed
-			logger.Debugf("node: %v", s.Node)
 			stop := false
 			if s.BatchClose != nil {
 				stop = *s.BatchClose

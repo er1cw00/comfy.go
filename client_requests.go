@@ -306,7 +306,7 @@ func (c *ComfyClient) QueuePrompt(graph *Graph) (*QueueItem, error) {
 			return nil, errors.New(perror.Error.Message)
 		}
 	}
-	c.messages = make(chan PromptMessage)
+	//c.messages = make(chan PromptMessage)
 	//c.queueditems[item.PromptID] = item
 	return item, nil
 }
