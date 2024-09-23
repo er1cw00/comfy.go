@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -49,14 +48,14 @@ func main() {
 	callbacks := &comfy.ComfyClientCallbacks{
 
 		WebsocketConnected: func(cc *comfy.ComfyClient) {
-			log.Printf("websocket connected\n")
+			logger.Debug("websocket connected\n")
 			if err := cc.QueryNodeObjects(); err != nil {
-				log.Printf("query node objects fail, err: %v", err)
+				logger.Debugf("query node objects fail, err: %v", err)
 				return
 			}
 		},
 		WebsocketDisconnected: func(cc *comfy.ComfyClient) {
-			log.Printf("websocket disconnected\n")
+			logger.Debug("websocket disconnected\n")
 		},
 	}
 	cc = comfy.NewComfyClient(serverAddr, callbacks)
@@ -87,7 +86,7 @@ func main() {
 	pathProp.SetValue("/Users/wadahana/Desktop/senjougahara2.png")
 
 	batchSizeProp := batcher.GetPropertyWithName("frames_per_batch")
-	batchSizeProp.SetValue(20)
+	batchSizeProp.SetValue(40)
 
 	outPathProp := saver.GetPropertyWithName("path")
 	outPathProp.SetValue("/Users/wadahana/Desktop/output.mp4")
@@ -100,7 +99,7 @@ func main() {
 
 	_, err = cc.QueuePrompt(g)
 	if err != nil {
-		log.Println("Failed to queue prompt: ", err)
+		logger.Error("Failed to queue prompt: ", err)
 		os.Exit(1)
 	}
 
@@ -110,12 +109,12 @@ func main() {
 		switch msg.Type {
 		case "started":
 			qm := msg.ToPromptMessageStarted()
-			log.Printf("Start executing prompt ID %s\n", qm.PromptID)
+			logger.Debugf("Start executing prompt ID %s\n", qm.PromptID)
 		case "executing":
 			qm := msg.ToPromptMessageExecuting()
 			// store the node's title so we can use it in the progress bar
 			//currentNodeTitle = qm.Title
-			log.Printf("Executing Node: %d\n", qm.NodeID)
+			logger.Debugf("Executing Node: %d\n", qm.NodeID)
 		case "progress":
 			// update our progress bar
 			qm := msg.ToPromptMessageProgress()
@@ -124,11 +123,11 @@ func main() {
 			// if we were stopped for an exception, display the exception message
 			qm := msg.ToPromptMessageStopped()
 			if qm.Exception != nil {
-				log.Println(qm.Exception)
+				logger.Debugf("exception: %v", qm.Exception)
 				os.Exit(1)
 			}
 			continueLoop = !qm.Stop
-			fmt.Printf("continueLoop:  %v \n", qm.Stop)
+			logger.Debugf("continueLoop:  %v \n", qm.Stop)
 		case "data":
 			qm := msg.ToPromptMessageData()
 			// data objects have the fields: Filename, Subfolder, Type
@@ -139,17 +138,17 @@ func main() {
 					for _, output := range v {
 						img_data, err := cc.GetImage(output)
 						if err != nil {
-							log.Println("Failed to get image:", err)
+							logger.Debugf("Failed to get image: %v", err)
 							os.Exit(1)
 						}
 						f, err := os.Create(output.Filename)
 						if err != nil {
-							log.Println("Failed to write image:", err)
+							logger.Debugf("Failed to write image: %v", err)
 							os.Exit(1)
 						}
 						f.Write(*img_data)
 						f.Close()
-						log.Println("Got data: ", output.Filename)
+						logger.Debugf("Got data: %s", output.Filename)
 					}
 				}
 			}
