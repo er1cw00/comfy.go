@@ -1,0 +1,191 @@
+{
+    "last_node_id": 4,
+    "last_link_id": 3,
+    "nodes": [
+      {
+        "id": 1,
+        "type": "ImageLoader",
+        "pos": [
+          208,
+          138
+        ],
+        "size": [
+          384.1875,
+          156.9140625
+        ],
+        "flags": {},
+        "order": 0,
+        "mode": 0,
+        "outputs": [
+          {
+            "name": "IMAGE",
+            "type": "IMAGE",
+            "links": [
+              2
+            ],
+            "shape": 3,
+            "slot_index": 0
+          },
+          {
+            "name": "MASK",
+            "type": "MASK",
+            "links": null,
+            "shape": 3
+          }
+        ],
+        "properties": {
+          "Node name for S&R": "ImageLoader"
+        },
+        "widgets_values": [
+          ""
+        ],
+        "shape": 1
+      },
+      {
+        "id": 3,
+        "type": "BRIA_RMBG_ModelLoader_Zho",
+        "pos": [
+          208,
+          340
+        ],
+        "size": [
+          383.9921875,
+          52.25390625
+        ],
+        "flags": {},
+        "order": 1,
+        "mode": 0,
+        "outputs": [
+          {
+            "name": "rmbgmodel",
+            "type": "RMBGMODEL",
+            "links": [
+              1
+            ],
+            "shape": 3,
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "Node name for S&R": "BRIA_RMBG_ModelLoader_Zho"
+        },
+        "shape": 1
+      },
+      {
+        "id": 4,
+        "type": "BRIA_RMBG_Zho",
+        "pos": [
+          208,
+          439
+        ],
+        "size": [
+          385.24609375,
+          56.953125
+        ],
+        "flags": {},
+        "order": 2,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "rmbgmodel",
+            "type": "RMBGMODEL",
+            "link": 1
+          },
+          {
+            "name": "image",
+            "type": "IMAGE",
+            "link": 2
+          }
+        ],
+        "outputs": [
+          {
+            "name": "image",
+            "type": "IMAGE",
+            "links": [
+              3
+            ],
+            "shape": 3,
+            "slot_index": 0
+          },
+          {
+            "name": "mask",
+            "type": "MASK",
+            "links": null,
+            "shape": 3
+          }
+        ],
+        "properties": {
+          "Node name for S&R": "BRIA_RMBG_Zho"
+        },
+        "shape": 1
+      },
+      {
+        "id": 2,
+        "type": "ImageSaver",
+        "pos": [
+          208,
+          539
+        ],
+        "size": [
+          384.40625,
+          153.73828125
+        ],
+        "flags": {},
+        "order": 3,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "images",
+            "type": "IMAGE",
+            "link": 3
+          }
+        ],
+        "properties": {
+          "Node name for S&R": "ImageSaver"
+        },
+        "widgets_values": [
+          "",
+          90
+        ],
+        "shape": 1
+      }
+    ],
+    "links": [
+      [
+        1,
+        3,
+        0,
+        4,
+        0,
+        "RMBGMODEL"
+      ],
+      [
+        2,
+        1,
+        0,
+        4,
+        1,
+        "IMAGE"
+      ],
+      [
+        3,
+        4,
+        0,
+        2,
+        0,
+        "IMAGE"
+      ]
+    ],
+    "groups": [],
+    "config": {},
+    "extra": {
+      "ds": {
+        "scale": 1.2100000000000006,
+        "offset": [
+          140.58521200982366,
+          -104.6279420051805
+        ]
+      }
+    },
+    "version": 0.4
+  }
